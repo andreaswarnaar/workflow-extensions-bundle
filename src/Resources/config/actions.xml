@@ -1,0 +1,72 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+    <services>
+        <defaults public="false" />
+
+        <service id="gtt.workflow.action.registry" class="Gtt\Bundle\WorkflowExtensionsBundle\Action\Registry" lazy="true">
+            <!--Built-in system actions-->
+            <argument type="collection">
+                <argument key="apply_transitions" type="service">
+                    <service parent="gtt.workflow.action.callable_method.reference.prototype">
+                        <argument type="collection">
+                            <argument type="service" id="gtt.workflow.transition_applier" />
+                            <argument type="string">applyTransitions</argument>
+                        </argument>
+
+                        <argument type="constant">Gtt\Bundle\WorkflowExtensionsBundle\Action\Reference\ActionReferenceInterface::TYPE_WORKFLOW</argument>
+                    </service>
+                </argument>
+                <argument key="apply_transition" type="service">
+                    <service parent="gtt.workflow.action.callable_method.reference.prototype">
+                        <argument type="collection">
+                            <argument type="service" id="gtt.workflow.transition_applier" />
+                            <argument type="string">applyTransition</argument>
+                        </argument>
+
+                        <argument type="constant">Gtt\Bundle\WorkflowExtensionsBundle\Action\Reference\ActionReferenceInterface::TYPE_WORKFLOW</argument>
+                    </service>
+                </argument>
+            </argument>
+        </service>
+
+        <service id="gtt.workflow.action.callable_method.reference.prototype"
+                 class="Gtt\Bundle\WorkflowExtensionsBundle\Action\Reference\CallableMethod"
+                 abstract="true" />
+
+        <service id="gtt.workflow.action.expression_language"
+                 class="Gtt\Bundle\WorkflowExtensionsBundle\Action\ExpressionLanguage\ActionExpressionLanguage">
+            <argument type="service" id="gtt.workflow.action.registry" />
+            <argument type="service" id="gtt.workflow.action.executor" />
+            <argument type="service" id="gtt.workflow.context_container" />
+        </service>
+
+        <service id="gtt.workflow.action.execute.command" class="Gtt\Bundle\WorkflowExtensionsBundle\Command\ExecuteActionCommand">
+            <argument type="service" id="gtt.workflow.action.executor" />
+            <argument type="service" id="workflow.registry" />
+            <argument type="service" id="gtt.workflow.subject_manipulator" />
+            <tag name="console.command" command="workflow:action:execute" />
+        </service>
+
+        <service id="gtt.workflow.action.executor" class="Gtt\Bundle\WorkflowExtensionsBundle\Action\Executor">
+            <argument type="service" id="gtt.workflow.action.registry" />
+            <argument type="service" id="gtt.workflow.context_container" />
+        </service>
+
+
+        <!--Concrete system actions-->
+        <service id="gtt.workflow.transition_applier"
+                 class="Gtt\Bundle\WorkflowExtensionsBundle\Actions\TransitionApplier">
+            <argument type="service" id="logger"/>
+            <tag name="monolog.logger" channel="workflow"/>
+        </service>
+
+        <service id="gtt.workflow.context_container">
+            <argument type="collection" />
+
+            <tag name="container.service_locator" />
+        </service>
+    </services>
+</container>

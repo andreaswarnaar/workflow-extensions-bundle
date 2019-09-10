@@ -29,8 +29,7 @@ Requirements
 
 Since Symfony's Workflow component requires PHP 5.5.9+ WorkflowExtensionsBundle supports PHP 5.5.9 and newer.
 
-Workflow component is integrated in Symfony 3 ecosystem starting from 3.2 version. In order to use it in applications based on Symfony 3.1 and lower you can use [fduch/workflow-bundle](https://github.com/fduch/workflow-bundle).
-Until Symfony 3.2 will be released fduch/workflow-bundle is required by WorkflowExtensionsBundle to support all the stable Symfony stacks. After that this dependency will be optional (and will be moved to `suggest` section) for old versions support.
+Workflow component is integrated in Symfony 3 ecosystem starting from 3.2 version. In order to use it in applications based on Symfony 3.1 and lower you can use [1.x version](https://github.com/GlobalTradingTechnologies/workflow-extensions-bundle/tree/1.x) of the Bundle.
 
 Besides [symfony/framework-bundle](https://github.com/symfony/framework-bundle) and [symfony/expression-language](https://github.com/symfony/expression-language) packages are required.
  
@@ -162,6 +161,8 @@ workflow_extensions:
     subject_manipulator:
         My\Bundle\Entity\Order:
             subject_from_domain: "container.get('doctrine').getManagerForClass(subjectClass).find(subjectClass, subjectId)"
+    context:
+        doctrine: ~
 ```    
 Configuration above is similar to previous one with several differences.
 
@@ -190,8 +191,35 @@ workflow_extensions:
                     dangerous: 'not container.get("access_checker").isGranted("ROLE_MANAGER")'
     subject_manipulator:
         My\Bundle\Entity\Order: ~
+    context:
+        access_checker: ~
 ```
 Note that here again we use expression evaluated by [ExpressionLanguage](https://github.com/symfony/expression-language) with container variable represents DI Container allowing usage of public services to decide whether to block transitions or not. 
+
+## Contexts
+When expressions use some container service it is fetched from container using `container.get()` method. Since Symfony 4 
+private services can not be fetched from container in such way. To access required service inside the expression the 
+former must be explicitly exposed in bundle configuration. This is done inside `context` array in bundle
+configuration:
+
+```yaml
+workflow_extensions:
+  ...
+  context:
+    # This will expose "doctrine" service from DI under "doctrine" alias inside expression container
+    doctrine: ~ 
+    
+    # This will expose "security.authorization_checker" from DI and make it available under 
+    # "auth_checker" alias inside expression container
+    auth_checker: 'security.authorization_checker'
+    
+  workflows:
+    simple:
+      guard:
+        expression: 'not container.get("auth_checker").isGranted("ROLE_USER")'
+        transitions:
+          dangerous: 'not container.get("auth_checker").isGranted("ROLE_MANAGER")'
+``` 
 
 Tests
 =====
